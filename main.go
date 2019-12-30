@@ -1,12 +1,13 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"math/rand"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/spf13/pflag"
 
 	"go.coder.com/cli"
 	"go.coder.com/flog"
@@ -40,6 +41,7 @@ type rootCmd struct {
 	noReuseConnection bool
 	bindAddr          string
 	sshFlags          string
+	uploadCodeServer  string
 }
 
 func (c *rootCmd) Spec() cli.CommandSpec {
@@ -50,16 +52,17 @@ func (c *rootCmd) Spec() cli.CommandSpec {
 	}
 }
 
-func (c *rootCmd) RegisterFlags(fl *flag.FlagSet) {
+func (c *rootCmd) RegisterFlags(fl *pflag.FlagSet) {
 	fl.BoolVar(&c.skipSync, "skipsync", false, "skip syncing local settings and extensions to remote host")
 	fl.BoolVar(&c.syncBack, "b", false, "sync extensions back on termination")
 	fl.BoolVar(&c.printVersion, "version", false, "print version information and exit")
 	fl.BoolVar(&c.noReuseConnection, "no-reuse-connection", false, "do not reuse SSH connection via control socket")
 	fl.StringVar(&c.bindAddr, "bind", "", "local bind address for SSH tunnel, in [HOST][:PORT] syntax (default: 127.0.0.1)")
 	fl.StringVar(&c.sshFlags, "ssh-flags", "", "custom SSH flags")
+	fl.StringVar(&c.uploadCodeServer, "upload-code-server", "", "custom code-server binary to upload to the remote host")
 }
 
-func (c *rootCmd) Run(fl *flag.FlagSet) {
+func (c *rootCmd) Run(fl *pflag.FlagSet) {
 	if c.printVersion {
 		fmt.Printf("%v\n", version)
 		os.Exit(0)
@@ -78,11 +81,12 @@ func (c *rootCmd) Run(fl *flag.FlagSet) {
 	}
 
 	err := sshCode(host, dir, options{
-		skipSync:        c.skipSync,
-		sshFlags:        c.sshFlags,
-		bindAddr:        c.bindAddr,
-		syncBack:        c.syncBack,
-		reuseConnection: !c.noReuseConnection,
+		skipSync:         c.skipSync,
+		sshFlags:         c.sshFlags,
+		bindAddr:         c.bindAddr,
+		syncBack:         c.syncBack,
+		reuseConnection:  !c.noReuseConnection,
+		uploadCodeServer: c.uploadCodeServer,
 	})
 
 	if err != nil {
